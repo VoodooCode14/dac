@@ -1,3 +1,7 @@
+*.npy
+*test*
+
+
 .project
 .pydevproject
 

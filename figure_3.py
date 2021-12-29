@@ -16,17 +16,18 @@ import matplotlib.pyplot as plt
 
 import finn.misc.timed_pool as tp
 
-thread_cnt = 11
+thread_cnt = 1
+freq_bin_sz = 2
 
 def mag_sq_coh(data, _0, _1, frequency_tgt, _2, _3):
     return cohd.run_msc(data)[frequency_tgt]
 def img_coh(data, _0, _1, frequency_tgt, _2, _3):
     return cohd.run_ic(data)[frequency_tgt]
-def dac_coh(data, _0, bins, frequency_tgt, _1, _2, freq_range = 2, min_phase_diff = 10):
-    dac_range = cohd.run_dac(data, bins, frequency_tgt - freq_range, frequency_tgt + freq_range + 1, return_signed_conn = True, minimal_angle_thresh = min_phase_diff)    
+def dac_coh(data, _0, bins, frequency_tgt, _1, _2, freq_range = 5, min_phase_diff = 10):
+    dac_range = cohd.run_dac(data, bins, frequency_tgt - freq_range*freq_bin_sz, frequency_tgt + freq_range*freq_bin_sz + 1, return_signed_conn = True, minimal_angle_thresh = min_phase_diff)    
     return (0 if (np.isnan(dac_range)) else dac_range)
-def psi_coh(_0, data, bins, frequency_tgt, _1, _2, freq_range = 2):
-    return cohd.run_psi(data, bins, frequency_tgt - freq_range, frequency_tgt + freq_range + 1)
+def psi_coh(_0, data, bins, frequency_tgt, _1, _2, freq_range = 5):
+    return cohd.run_psi(data, bins, frequency_tgt - freq_range*freq_bin_sz, frequency_tgt + freq_range*freq_bin_sz + 1)
 def wpli_coh(_0, _1, _2, frequency_tgt, data1, data2):
     win_sz = 5500
     
@@ -89,11 +90,11 @@ def main():
     demo_file = "data_0.npy"
     frequency_tgt = 30
     score0 = single_channel_shift(noise_weight, phase_min, phase_max, phase_step, pad_type, window, axes0, axes1, methods, frequency_peak = frequency_tgt, path = demo_file, axes_idx = 0)
-     
+      
     demo_file = "data_1.npy"
     frequency_tgt = 20
     score1 = single_channel_shift(noise_weight, phase_min, phase_max, phase_step, pad_type, window, axes0, axes1, methods, frequency_peak = frequency_tgt, path = demo_file, axes_idx = 1)
-    
+     
     demo_file = "data_2.npy"
     frequency_tgt = 29
     score2 = single_channel_shift(noise_weight, phase_min, phase_max, phase_step, pad_type, window, axes0, axes1, methods, frequency_peak = frequency_tgt, path = demo_file, axes_idx = 2)
@@ -107,12 +108,7 @@ def main():
     plt.show(block = True)
 
 def __multi_channel_shift(methods, offset, frequency_sampling, frequency_peak, phase_shift, data2, noise_weight, data1, nfft):
-    
-    #===========================================================================
-    # phase_shift = -4
-    # print("test")
-    #===========================================================================
-    
+        
     features = [None for _ in range(len(methods))]
     loc_offset = offset - int(np.ceil(frequency_sampling/frequency_peak * phase_shift/360))
     loc_data = data2[(loc_offset):]
@@ -130,7 +126,7 @@ def __multi_channel_shift(methods, offset, frequency_sampling, frequency_peak, p
         
     for (method_idx, method) in enumerate(methods):
         features[method_idx] = method(comp_coh, comp_coh2, bins, frequency_peak, data1, data22)
-    
+        
     return features
 
 def multi_channel_shift(methods, phase_min, phase_max, phase_step, axes0, axes1, frequency_peak, frequency_sampling = 5500, noise_weight = 0.0, axes_idx = None):
@@ -139,7 +135,7 @@ def multi_channel_shift(methods, phase_min, phase_max, phase_step, axes0, axes1,
     data1 = np.load(path)[3, :]
     data2 = np.load(path)[2, :]
     
-    nfft = 5500
+    nfft = int(frequency_sampling*freq_bin_sz)
     
     #Data container
     features = list()
@@ -227,9 +223,9 @@ def single_channel_shift(noise_weight,
     offset = int(np.ceil(frequency_sampling/frequency_peak))
     
     #overwriting paramters with sampling frequency from loaded data
-    nperseg = frequency_sampling
+    nperseg = int(frequency_sampling*freq_bin_sz)
     fs = frequency_sampling
-    nfft = frequency_sampling
+    nfft = int(frequency_sampling*freq_bin_sz)
     
     #Data container
     features = list()
